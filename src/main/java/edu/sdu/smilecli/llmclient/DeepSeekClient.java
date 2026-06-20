@@ -57,12 +57,12 @@ public class DeepSeekClient implements LlmClient {
     protected static final ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    public ChatResponse chat(List<Message> message, List<Tool> tools) {
+    public ChatResponse chat(List<Message> messages, List<Tool> tools) {
         ObjectNode requestBody = mapper.createObjectNode();
         requestBody.put("model", model);
 
         ArrayNode messagesArr = requestBody.putArray("messages");
-        for (Message msg : message) {
+        for (Message msg : messages) {
             ObjectNode msgNode = messagesArr.addObject();
             msgNode.put("role", msg.role());
             msgNode.put("content", msg.content());
@@ -111,6 +111,12 @@ public class DeepSeekClient implements LlmClient {
 
         try (Response response = SHARED_HTTP_CLIENT.newCall(request).execute()) {
             ResponseBody responseBody = response.body();
+            if (!response.isSuccessful()) {
+                throw new IOException("API请求失败" + response.code());
+            }
+            if (responseBody == null) {
+                throw new IOException("API请求失败, responseBody为空");
+            }
 //            log.info("Response: {}", responseBody.toString());
 //            System.out.println(responseBody.string());
             JsonNode responseJsonNode = mapper.readTree(responseBody.string());
