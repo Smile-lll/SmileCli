@@ -2,6 +2,7 @@ package edu.sdu.smilecli.cli;
 
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
+import edu.sdu.smilecli.llmclient.LlmClient.ChatResponse;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -11,6 +12,7 @@ import org.jline.terminal.TerminalBuilder;
 
 import java.io.*;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,6 +27,9 @@ public class Main {
             return;
         }
         LlmClient llmClient = new DeepSeekClient(apiKey);
+
+//        ToolRegistry toolRegistry = new ToolRegistry();
+//        Agent agent = new Agent(llmClient, toolRegistry);
 //        System.out.println(apiKey);
 //        llmClient.chat(null, null);
 
@@ -38,7 +43,7 @@ public class Main {
                 String input;
 //                String currentPath = System.getProperty("D:\\SmileCli");
                 try {
-                    input = lineReader.readLine("SmileCli > ");
+                    input = lineReader.readLine("SmileInput> ");
                 } catch (UserInterruptException e) {
                     continue;//ctrl + c 不退出
                 } catch (EndOfFileException e) {
@@ -67,6 +72,16 @@ public class Main {
                     cliPrint(terminal, "已清空对话历史");
                     continue;
                 }
+
+//                String response = agent.run(input);
+
+                List<LlmClient.Message> messages = new ArrayList<>();
+                messages.add(LlmClient.Message.system("你是一个专业的LLM模型"));
+                messages.add(LlmClient.Message.user(input));
+
+                ChatResponse chat = llmClient.chat(messages, null);
+
+                cliPrint(terminal, "SmileAgent: " + chat.content());
 
             }
 
