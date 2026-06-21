@@ -54,30 +54,30 @@ public class Agent {
             // 调用 LLM
             LlmClient.ChatResponse response = llmClient.chat(
                     conversationHistory,
-//                    toolRegistry.getToolDefinitions()
-                    null
+                    toolRegistry.getToolDefinitions()
+//                    null
             );
 
             // 如果有工具调用
-//            if (response.hasToolCalls()) {
-            if (false) {
-//                // 记录助手消息
-//                conversationHistory.add(
-//                        LlmClient.Message.assistant(response.content(), response.toolCalls())
-//                );
-//
-//                // 执行每个工具调用
-//                for (LlmClient.ToolCall toolCall : response.toolCalls()) {
-//                    String result = toolRegistry.executeTool(
-//                            toolCall.function().name(),
-//                            toolCall.function().arguments()
-//                    );
-//
-//                    // 记录工具结果
-//                    conversationHistory.add(
-//                            LlmClient.Message.tool(toolCall.id(), result)
-//                    );
-//                }
+            if (response.hasToolCalls()) {
+//            if (false) {
+                // 记录助手消息
+                conversationHistory.add(
+                        LlmClient.Message.assistant(response.content(), response.toolCalls())
+                );
+
+                // 执行每个工具调用
+                for (LlmClient.ToolCall toolCall : response.toolCalls()) {
+                    String result = toolRegistry.executeTool(
+                            toolCall.function().name(),
+                            toolCall.function().arguments()
+                    );
+
+                    // 记录工具结果
+                    conversationHistory.add(
+                            LlmClient.Message.tool(result, toolCall.id())
+                    );
+                }
                 // 继续循环，让 LLM 根据结果继续思考
                 continue;
             } else {
@@ -94,5 +94,6 @@ public class Agent {
 
     public void clearHistory() {
         conversationHistory.clear();
+        conversationHistory.add(LlmClient.Message.system(SYSTEM_PROMPT));
     }
 }

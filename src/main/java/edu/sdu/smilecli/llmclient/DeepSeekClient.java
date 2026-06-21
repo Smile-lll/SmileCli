@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -66,38 +67,38 @@ public class DeepSeekClient implements LlmClient {
             ObjectNode msgNode = messagesArr.addObject();
             msgNode.put("role", msg.role());
             msgNode.put("content", msg.content());
-//            // 如果是toolCall
-//            if (msg.toolCalls() != null && !msg.toolCalls().isEmpty()) {
-//                ArrayNode toolCallsArr = msgNode.putArray("tool_calls");
-//                for (ToolCall toolCall : msg.toolCalls()) {
-//                    ObjectNode toolCallNode = toolCallsArr.addObject();
-//                    toolCallNode.put("id", toolCall.id());
-//                    toolCallNode.put("type", "function");
-//                    ObjectNode functionNode = toolCallNode.putObject("function");
-//                    functionNode.put("function", toolCall.function().name());
-//                    functionNode.put("arguments", toolCall.function().arguments());
-//                }
-//            }
-//
-//            //如果是tool消息
-//            if (msg.toolCallId() != null) {
-//                msgNode.put("tool_call_id", msg.toolCallId());
-//            }
+            // 如果是toolCall
+            if (msg.toolCalls() != null && !msg.toolCalls().isEmpty()) {
+                ArrayNode toolCallsArr = msgNode.putArray("tool_calls");
+                for (ToolCall toolCall : msg.toolCalls()) {
+                    ObjectNode toolCallNode = toolCallsArr.addObject();
+                    toolCallNode.put("id", toolCall.id());
+                    toolCallNode.put("type", "function");
+                    ObjectNode functionNode = toolCallNode.putObject("function");
+                    functionNode.put("name", toolCall.function().name());
+                    functionNode.put("arguments", toolCall.function().arguments());
+                }
+            }
+
+            //如果是tool消息
+            if (msg.toolCallId() != null) {
+                msgNode.put("tool_call_id", msg.toolCallId());
+            }
         }
 
         //添加tools
-//        if (tools != null && !tools.isEmpty()) {
-//            ArrayNode toolsArr = requestBody.putArray("tools");
-//            for (Tool tool : tools) {
-//                ObjectNode toolNode = toolsArr.addObject();
-//                toolNode.put("type", "function");
-//                ObjectNode functionNode = toolNode.putObject("function");
-//                functionNode.put("name", tool.name());
-//                functionNode.put("description", tool.description());
-//                functionNode.put("parameters", tool.parameters());
-//
-//            }
-//        }
+        if (tools != null && !tools.isEmpty()) {
+            ArrayNode toolsArr = requestBody.putArray("tools");
+            for (Tool tool : tools) {
+                ObjectNode toolNode = toolsArr.addObject();
+                toolNode.put("type", "function");
+                ObjectNode functionNode = toolNode.putObject("function");
+                functionNode.put("name", tool.name());
+                functionNode.put("description", tool.description());
+                functionNode.put("parameters", tool.parameters());
+
+            }
+        }
 
         // 发送http
         RequestBody body = RequestBody.create(requestBody.toString(), MediaType.parse("application/json"));
@@ -119,11 +120,28 @@ public class DeepSeekClient implements LlmClient {
             }
 //            log.info("Response: {}", responseBody.toString());
 //            System.out.println(responseBody.string());
+            //解析content
             JsonNode responseJsonNode = mapper.readTree(responseBody.string());
             JsonNode messageJsonNode = responseJsonNode.path("choices").path(0).path("message");
             String content = messageJsonNode.path("content").asText("");
 //            System.out.println( content);
-            return new ChatResponse(content);
+
+            //解析 toolCall
+            List<ToolCall> toolCalls = new ArrayList<>();
+            JsonNode toolCallJsonNodeArr = messageJsonNode.path("tool_calls");
+            if(toolCallJsonNodeArr.isArray()){
+                for (JsonNode toolCallJsonNode : toolCallJsonNodeArr) {
+                    String id = toolCallJsonNode.path("id").asText("");
+
+                    JsonNode functionJsonNode = toolCallJsonNode.path("function");
+                    String name = functionJsonNode.path("name").asText("");
+                    String arguments = functionJsonNode.path("arguments").asText("");
+                    toolCalls.add(new ToolCall(id, new ToolCall.Function(name, arguments)));
+                }
+            }
+            //如果toolCalls为空/没有toolCall字段 上面解析代码不会进入 所以应该返回纯文本的响应
+            return new ChatResponse(content, toolCalls.isEmpty()? null : toolCalls);
+//            return new ChatResponse(content);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

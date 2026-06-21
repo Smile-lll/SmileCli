@@ -23,18 +23,18 @@ public interface LlmClient {
             return new Message("user", content, null, null);
         }
 
-//        public static Message assistant(String content, List<ToolCall> toolCalls) {
-//            return new Message("assistant", content, toolCalls, null);
-//        }
+        public static Message assistant(String content, List<ToolCall> toolCalls) {
+            return new Message("assistant", content, toolCalls, null);
+        }
 
         //无tool调用的返回
         public static Message assistant(String content) {
             return new Message("assistant", content, null, null);
         }
 
-//        public static Message tool(String content, String toolCallId) {
-//            return new Message("tool", content, null, toolCallId);
-//        }
+        public static Message tool(String content, String toolCallId) {
+            return new Message("tool", content, null, toolCallId);
+        }
     }
 
     /*
@@ -52,7 +52,7 @@ public interface LlmClient {
      * function: tool的调用参数------->受Tool的parameters约束
      * */
     record ToolCall(String id, Function function) {
-        record Function(String name, String arguments) {
+        public record Function(String name, String arguments) {
         }
     }
 
@@ -69,6 +69,10 @@ public interface LlmClient {
     record ChatResponse(String content, List<ToolCall> toolCalls) {
         public ChatResponse(String content) {
             this(content, null);
+        }
+
+        public boolean hasToolCalls() {
+            return toolCalls != null && !toolCalls.isEmpty();
         }
     }
 }

@@ -1,9 +1,11 @@
 package edu.sdu.smilecli.tool;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import edu.sdu.smilecli.llmclient.LlmClient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,11 +13,14 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ToolRegistry {
-    private final Map<String, Tool> tools = new HashMap<>();
+    private final Map<String, Tool> tools = new ConcurrentHashMap<>();
     private static final ObjectMapper mapper = new ObjectMapper();//用于制作JsonSchema
+    private String projectPath = System.getProperty("user.dir");//获取当前SmileCli项目目录
 
     public ToolRegistry() {
         //注册自带工具集
@@ -182,5 +187,38 @@ public class ToolRegistry {
         return parameters;
     }
 
+    /*
+     * 获取注册工具定义
+     * */
+    public List<LlmClient.Tool> getToolDefinitions() {
+        return tools.values().stream().map(tool -> new LlmClient.Tool(tool.name(), tool.description(), tool.parameters)).toList();
+    }
+
+    /**
+     * 执行tool的接口
+     * 调用tool 的execute方法
+     */
+    public String executeTool(String name, String arguments) {
+//        return doExecuteTool(name, arguments).text();
+
+        Tool tool = tools.get(name);
+        if (tool == null) {
+            return "未找到该工具 :" + name;
+        }
+        Map<String, String> args = new HashMap<>();
+        try {
+            if (arguments != null && !arguments.isEmpty()) {
+                JsonNode jsonNode = mapper.readTree(arguments);
+                jsonNode.fields().forEachRemaining(entry -> {
+                    args.put(entry.getKey(), entry.getValue().asText());
+                });
+
+                return tool.executor().execute(args);
+            }
+        } catch (JsonProcessingException e) {
+            return "工具执行失败: " + e.getMessage();
+        }
+        return tool.executor().execute(args);
+    }
 
 }

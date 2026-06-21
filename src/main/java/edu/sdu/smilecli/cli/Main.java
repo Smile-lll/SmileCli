@@ -24,8 +24,8 @@ public class Main {
         }
         LlmClient llmClient = new DeepSeekClient(apiKey);
 
-//        ToolRegistry toolRegistry = new ToolRegistry();
-        Agent agent = new Agent(llmClient, null);
+        ToolRegistry toolRegistry = new ToolRegistry();
+        Agent agent = new Agent(llmClient, toolRegistry);
 //        System.out.println(apiKey);
 //        llmClient.chat(null, null);
 
