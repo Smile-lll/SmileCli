@@ -28,8 +28,8 @@ public class Main {
         }
         LlmClient llmClient = new DeepSeekClient(apiKey);
 
-//        ToolRegistry toolRegistry = new ToolRegistry();
-//        Agent agent = new Agent(llmClient, toolRegistry);
+        ToolRegistry toolRegistry = new ToolRegistry();
+        Agent agent = new Agent(llmClient, toolRegistry);
 //        System.out.println(apiKey);
 //        llmClient.chat(null, null);
 
@@ -73,15 +73,16 @@ public class Main {
                     continue;
                 }
 
-//                String response = agent.run(input);
+                String response = agent.run(input);
 
-                List<LlmClient.Message> messages = new ArrayList<>();
-                messages.add(LlmClient.Message.system("你是一个专业的LLM模型"));
-                messages.add(LlmClient.Message.user(input));
+//                List<LlmClient.Message> messages = new ArrayList<>();
+//                messages.add(LlmClient.Message.system("你是一个专业的LLM模型"));
+//                messages.add(LlmClient.Message.user(input));
 
-                ChatResponse chat = llmClient.chat(messages, null);
+//                ChatResponse chat = llmClient.chat(messages, null);
 
-                cliPrint(terminal, "SmileAgent: " + chat.content());
+                if (response != null && !response.isEmpty())
+                    cliPrint(terminal, "SmileAgent: " + response);
 
             }
 
