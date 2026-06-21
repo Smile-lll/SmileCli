@@ -57,6 +57,7 @@ public class Main {
                     cliPrint(terminal, "当前支持命令");
                     for (String command : COMMANDS)
                         cliPrint(terminal, command);
+                    continue;
                 }
 
                 if ("/exit".equalsIgnoreCase(input)) {
@@ -64,7 +65,7 @@ public class Main {
                 }
 
                 if ("/clear".equalsIgnoreCase(input)) {
-//                    agent.clearHistory();
+                    agent.clearHistory();
                     cliPrint(terminal, "已清空对话历史");
                     continue;
                 }
