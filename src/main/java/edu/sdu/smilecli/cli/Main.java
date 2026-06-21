@@ -35,6 +35,10 @@ public class Main {
                     .terminal(terminal)
                     .build();
             printBanner(terminal);
+            cliPrint(terminal, "欢迎使用SmileCLI,以下是提供的一些常见指令:(/ 可查看详细指令)");
+            for (String command : COMMANDS)
+                cliPrint(terminal, command);
+            cliPrint(terminal, " ");
             while (true) {
                 String input;
 //                String currentPath = System.getProperty("D:\\SmileCli");
@@ -61,6 +65,7 @@ public class Main {
                 }
 
                 if ("/exit".equalsIgnoreCase(input)) {
+                    cliPrint(terminal, "再见 :)");
                     break;
                 }
 
@@ -83,7 +88,7 @@ public class Main {
 
             }
 
-            cliPrint(terminal, "再见 :)");
+//            cliPrint(terminal, "再见 :)");
         } catch (IOException e) {
             System.err.println("❌ 终端初始化失败: " + e.getMessage());
             System.exit(1);

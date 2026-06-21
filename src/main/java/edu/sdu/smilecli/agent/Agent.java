@@ -2,10 +2,11 @@ package edu.sdu.smilecli.agent;
 
 import edu.sdu.smilecli.llmclient.LlmClient;
 import edu.sdu.smilecli.tool.ToolRegistry;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-
+@Slf4j
 public class Agent {
     private final LlmClient llmClient;
     private final ToolRegistry toolRegistry;
@@ -68,6 +69,9 @@ public class Agent {
 
                 // 执行每个工具调用
                 for (LlmClient.ToolCall toolCall : response.toolCalls()) {
+                    log.info("执行工具调用 id: {}", toolCall.id());
+                    log.info("function.name: {}", toolCall.function().name());
+                    log.info("function.arguments: {}", toolCall.function().arguments());
                     String result = toolRegistry.executeTool(
                             toolCall.function().name(),
                             toolCall.function().arguments()
