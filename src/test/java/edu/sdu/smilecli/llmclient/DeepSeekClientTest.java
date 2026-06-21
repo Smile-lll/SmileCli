@@ -1,4 +1,4 @@
-package edu.sdu.llmclient;
+package edu.sdu.smilecli.llmclient;
 
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
