@@ -12,6 +12,7 @@ public class Agent {
     private final ToolRegistry toolRegistry;
     private final List<LlmClient.Message> conversationHistory;
     private static final int MAX_ITERATIONS = 10;//最大React次数
+    LlmClient.UserToken usertoken;
 
     public Agent(LlmClient llmClient, ToolRegistry toolRegistry) {
         this.llmClient = llmClient;
@@ -44,7 +45,10 @@ public class Agent {
 //            请用中文回复用户。
 //            """;
 
-    public String run(String userInput) {
+    //用于Agent的run方法返回给Main的封装
+    public record Result(String content, LlmClient.UserToken usertoken){}
+
+    public Result run(String userInput) {
         // 添加用户输入
         conversationHistory.add(LlmClient.Message.user(userInput));
 
@@ -58,6 +62,9 @@ public class Agent {
                     toolRegistry.getToolDefinitions()
 //                    null
             );
+
+            //取出response中关于token的内容
+            usertoken = response.usertoken();
 
             // 如果有工具调用
             if (response.hasToolCalls()) {
@@ -89,11 +96,12 @@ public class Agent {
                 conversationHistory.add(
                         LlmClient.Message.assistant(response.content())
                 );
-                return response.content();
+//                return response.content();
+                return new Result(response.content(), usertoken);
             }
         }
-
-        return "达到最大迭代次数限制";
+        return new Result("达到最大迭代次数限制", usertoken);
+//        return "达到最大迭代次数限制";
     }
 
     public void clearHistory() {

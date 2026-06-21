@@ -7,6 +7,8 @@ import java.util.List;
 public interface LlmClient {
     // 定义Message、Tool--> 完成chat
 
+    static final long MAX_TOKEN = 1_000_000L;
+
     /*
      * 1. 创建一个Message类，包含role、content、toolCalls、toolCallId
      * role: system、user、assistant、tool
@@ -66,13 +68,22 @@ public interface LlmClient {
      * content: 模型返回的答案
      * toolCalls: 模型返回的tool调用参数
      * */
-    record ChatResponse(String content, List<ToolCall> toolCalls) {
+    record ChatResponse(String content, List<ToolCall> toolCalls, UserToken usertoken) {
         public ChatResponse(String content) {
-            this(content, null);
+            this(content, null, null);
         }
 
         public boolean hasToolCalls() {
             return toolCalls != null && !toolCalls.isEmpty();
         }
     }
+
+    /**
+     * promptTokens: 模型输入的token数量
+     * completionTokens: 模型输出的token数量
+     * totalTokens: 模型输入输出的token数量
+     */
+    record UserToken(long promptTokens, long completionTokens, long totalTokens, long availableContextTokens) {
+    }
+
 }

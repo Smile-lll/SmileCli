@@ -129,7 +129,7 @@ public class DeepSeekClient implements LlmClient {
             //解析 toolCall
             List<ToolCall> toolCalls = new ArrayList<>();
             JsonNode toolCallJsonNodeArr = messageJsonNode.path("tool_calls");
-            if(toolCallJsonNodeArr.isArray()){
+            if (toolCallJsonNodeArr.isArray()) {
                 for (JsonNode toolCallJsonNode : toolCallJsonNodeArr) {
                     String id = toolCallJsonNode.path("id").asText("");
 
@@ -139,8 +139,17 @@ public class DeepSeekClient implements LlmClient {
                     toolCalls.add(new ToolCall(id, new ToolCall.Function(name, arguments)));
                 }
             }
+
+            //解析token
+            JsonNode usageNode = responseJsonNode.path("usage");
+            UserToken userToken = new UserToken(usageNode.path("prompt_tokens").asLong(0),
+                    usageNode.path("completion_tokens").asLong(0),
+                    usageNode.path("total_tokens").asLong(0),
+                    MAX_TOKEN - usageNode.path("total_tokens").asInt(0));
+
+
             //如果toolCalls为空/没有toolCall字段 上面解析代码不会进入 所以应该返回纯文本的响应
-            return new ChatResponse(content, toolCalls.isEmpty()? null : toolCalls);
+            return new ChatResponse(content, toolCalls.isEmpty() ? null : toolCalls, userToken);
 //            return new ChatResponse(content);
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -75,7 +75,9 @@ public class Main {
                     continue;
                 }
 
-                String response = agent.run(input);
+                Agent.Result result = agent.run(input);
+                String response = result.content();
+                LlmClient.UserToken usertoken = result.usertoken();
 
 //                List<LlmClient.Message> messages = new ArrayList<>();
 //                messages.add(LlmClient.Message.system("你是一个专业的LLM模型"));
@@ -83,8 +85,14 @@ public class Main {
 
 //                ChatResponse chat = llmClient.chat(messages, null);
 
-                if (response != null && !response.isEmpty())
+                if (response != null && !response.isEmpty()) {
                     cliPrint(terminal, "SmileAgent: " + response);
+                    cliPrint(terminal, "");
+                    cliPrint(terminal, "输入TOKEN: " + usertoken.promptTokens());
+                    cliPrint(terminal, "输出TOKEN: " + usertoken.completionTokens());
+                    cliPrint(terminal, "本次询问消耗TOKEN: " + usertoken.totalTokens());
+                    cliPrint(terminal, "本次会话还剩TOKEN: " + usertoken.availableContextTokens());
+                }
 
             }
 
