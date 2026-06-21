@@ -38,7 +38,7 @@ public class Agent {
 //    请用中文回复用户。
 //    """;
     private static final String SYSTEM_PROMPT = """
-            你是一个智能编程助手，可以帮助用户完成各种任务。
+            你现在是SmileCli的智能编程助手，可以帮助用户完成各种任务。
             
             请用中文回复用户。
             """;
