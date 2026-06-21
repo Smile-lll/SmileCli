@@ -27,12 +27,13 @@ public class ToolRegistry {
     private void registerShellTools() {
         tools.put("execute_command", new Tool(
                 "execute_command",
-                "执行Shell命令，用于编译、运行、Git操作等",
+                "执行powershell命令，用于编译、运行、Git操作等",
                 createParameters(new Param("command", "string", "要执行的命令", true)),
                 args -> {
                     String command = args.get("command");
                     try {
-                        ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
+//                        ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
+                        ProcessBuilder pb = new ProcessBuilder("powershell", "-Command", command);
                         pb.redirectErrorStream(true);
                         Process process = pb.start();
 
