@@ -1,8 +1,9 @@
 package edu.sdu.smilecli.cli;
 
+import edu.sdu.smilecli.agent.Agent;
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
-import edu.sdu.smilecli.llmclient.LlmClient.ChatResponse;
+import edu.sdu.smilecli.tool.ToolRegistry;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
@@ -11,11 +12,6 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
 import java.io.*;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class Main {
     public static void main(String[] args) {
@@ -28,8 +24,8 @@ public class Main {
         }
         LlmClient llmClient = new DeepSeekClient(apiKey);
 
-        ToolRegistry toolRegistry = new ToolRegistry();
-        Agent agent = new Agent(llmClient, toolRegistry);
+//        ToolRegistry toolRegistry = new ToolRegistry();
+        Agent agent = new Agent(llmClient, null);
 //        System.out.println(apiKey);
 //        llmClient.chat(null, null);
 

@@ -66,38 +66,38 @@ public class DeepSeekClient implements LlmClient {
             ObjectNode msgNode = messagesArr.addObject();
             msgNode.put("role", msg.role());
             msgNode.put("content", msg.content());
-            // 如果是toolCall
-            if (msg.toolCalls() != null && !msg.toolCalls().isEmpty()) {
-                ArrayNode toolCallsArr = msgNode.putArray("tool_calls");
-                for (ToolCall toolCall : msg.toolCalls()) {
-                    ObjectNode toolCallNode = toolCallsArr.addObject();
-                    toolCallNode.put("id", toolCall.id());
-                    toolCallNode.put("type", "function");
-                    ObjectNode functionNode = toolCallNode.putObject("function");
-                    functionNode.put("function", toolCall.function().name());
-                    functionNode.put("arguments", toolCall.function().arguments());
-                }
-            }
-
-            //如果是tool消息
-            if (msg.toolCallId() != null) {
-                msgNode.put("tool_call_id", msg.toolCallId());
-            }
+//            // 如果是toolCall
+//            if (msg.toolCalls() != null && !msg.toolCalls().isEmpty()) {
+//                ArrayNode toolCallsArr = msgNode.putArray("tool_calls");
+//                for (ToolCall toolCall : msg.toolCalls()) {
+//                    ObjectNode toolCallNode = toolCallsArr.addObject();
+//                    toolCallNode.put("id", toolCall.id());
+//                    toolCallNode.put("type", "function");
+//                    ObjectNode functionNode = toolCallNode.putObject("function");
+//                    functionNode.put("function", toolCall.function().name());
+//                    functionNode.put("arguments", toolCall.function().arguments());
+//                }
+//            }
+//
+//            //如果是tool消息
+//            if (msg.toolCallId() != null) {
+//                msgNode.put("tool_call_id", msg.toolCallId());
+//            }
         }
 
         //添加tools
-        if (tools != null && !tools.isEmpty()) {
-            ArrayNode toolsArr = requestBody.putArray("tools");
-            for (Tool tool : tools) {
-                ObjectNode toolNode = toolsArr.addObject();
-                toolNode.put("type", "function");
-                ObjectNode functionNode = toolNode.putObject("function");
-                functionNode.put("name", tool.name());
-                functionNode.put("description", tool.description());
-                functionNode.put("parameters", tool.parameters());
-
-            }
-        }
+//        if (tools != null && !tools.isEmpty()) {
+//            ArrayNode toolsArr = requestBody.putArray("tools");
+//            for (Tool tool : tools) {
+//                ObjectNode toolNode = toolsArr.addObject();
+//                toolNode.put("type", "function");
+//                ObjectNode functionNode = toolNode.putObject("function");
+//                functionNode.put("name", tool.name());
+//                functionNode.put("description", tool.description());
+//                functionNode.put("parameters", tool.parameters());
+//
+//            }
+//        }
 
         // 发送http
         RequestBody body = RequestBody.create(requestBody.toString(), MediaType.parse("application/json"));
