@@ -48,7 +48,7 @@ public class ExecutionPlan {
     }
 
     private final String id;
-    private final String goal;           // 计划目标
+    private final String goal;           // 计划目标 (即用户和LLM的原始输入)
     private final Map<String, Task> tasks;  // 所有任务
     private final List<String> executionOrder;  // 执行顺序
     private PlanStatus status;

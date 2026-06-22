@@ -163,4 +163,16 @@ public class Task {
         return true;
     }
 
+    public void addDependent(String taskId) {
+        if (!dependents.contains(taskId)) {
+            dependents.add(taskId);
+        }
+    }
+
+    public void addDependency(String taskId) {
+        if (!dependencies.contains(taskId)) {
+            dependencies.add(taskId);
+        }
+    }
+
 }
