@@ -30,11 +30,11 @@ public class Task {
         return error;
     }
 
-    public List getDependencies() {
+    public List<String> getDependencies() {
         return dependencies;
     }
 
-    public List getDependents() {
+    public List<String> getDependents() {
         return dependents;
     }
 

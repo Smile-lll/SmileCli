@@ -1,9 +1,6 @@
 package edu.sdu.smilecli.plan;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 执行计划本身也有状态：
@@ -109,5 +106,33 @@ public class ExecutionPlan {
         return endTime - startTime;
     }
 
+    /**
+     * 添加任务
+     * */
+    public void addTask(Task task) {
+        tasks.put(task.getId(), task);
+        //加入了新任务 如果旧任务中有被此任务依赖的话，需要更新旧任务的dependents
+        //此任务中的 依赖和被依赖List在加入之前应该初始化好
+        for (String depId : task.getDependencies()) {
+            Task dep = tasks.get(depId);
+            if (dep != null)
+                dep.getDependencies().add(task.getId());
+            //注意这里的dep.getDependencies()在Task是final的，
+            //但是不能修改的是这个个引用，不是List内容不能修改
+        }
+    }
 
+    /**
+     * 获取任务
+     */
+    public Task getTask(String id) {
+        return tasks.get(id);
+    }
+
+    /**
+     * 获取所有任务
+     */
+    public Collection<Task> getAllTasks() {
+        return tasks.values();
+    }
 }
