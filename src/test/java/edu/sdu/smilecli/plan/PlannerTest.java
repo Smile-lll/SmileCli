@@ -1,5 +1,6 @@
 package edu.sdu.smilecli.plan;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
 import junit.framework.TestCase;
@@ -37,7 +38,7 @@ public class PlannerTest extends TestCase {
 
         return null;
     }
-    public void testCreatePlan() {
+    public void testCreatePlan() throws JsonProcessingException {
 
         String apiKey;
         apiKey = loadEnvValue("DEEPSEEK_API_KEY");

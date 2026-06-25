@@ -116,7 +116,9 @@ public class ExecutionPlan {
         for (String depId : task.getDependencies()) {
             Task dep = tasks.get(depId);
             if (dep != null)
-                dep.getDependencies().add(task.getId());
+//                dep.getDependents().add(task.getId()); 简单情况这样写 但是这样没避免反复添加 应该判断原先List是否存在
+                dep.addDependent(task.getId());//addDependent和addDependency加了封装
+
             //注意这里的dep.getDependencies()在Task是final的，
             //但是不能修改的是这个个引用，不是List内容不能修改
         }
