@@ -36,7 +36,18 @@ public class PlanExecuteAgent {
         System.out.println(plan);
 
         // 3. 执行计划
-        return executePlan(executionPlan);
+        String result = "";
+        for (int i = 0; i < 5; i++) {
+            result = executePlan(executionPlan);
+            if (executionPlan.getStatus() == ExecutionPlan.PlanStatus.COMPLETED) {
+                break;
+            }
+        }
+        if (executionPlan.getStatus() == ExecutionPlan.PlanStatus.FAILED) {
+            return "重试5次，该计划依旧失败\n" + result;
+        }
+
+        return result;
 
         //TODO 把PlanExecuteAgent的结果加入到ReAct的上下文里
         //TODO 约束规划必须规划>=5个task  或者 完成简单任务
