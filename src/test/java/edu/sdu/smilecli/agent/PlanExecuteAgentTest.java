@@ -57,7 +57,7 @@ public class PlanExecuteAgentTest extends TestCase {
             }
         };
 
-        PlanExecuteAgent agent = new PlanExecuteAgent(fakeClient, new ToolRegistry());
+        PlanExecuteAgent agent = new PlanExecuteAgent(fakeClient, new ToolRegistry(),System.out::println);
 
         String result = agent.run("Create a Spring Boot project");
 

@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+
 @Slf4j
 public class Agent {
     private final LlmClient llmClient;
@@ -13,11 +15,13 @@ public class Agent {
     private final List<LlmClient.Message> conversationHistory;
     private static final int MAX_ITERATIONS = 10;//最大React次数
     LlmClient.UserToken usertoken;
+    private final Consumer<String> output;
 
-    public Agent(LlmClient llmClient, ToolRegistry toolRegistry) {
+    public Agent(LlmClient llmClient, ToolRegistry toolRegistry, Consumer<String> output) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.conversationHistory = new ArrayList<>();
+        this.output = output;
 
         // 添加系统提示
         conversationHistory.add(LlmClient.Message.system(SYSTEM_PROMPT));
@@ -45,10 +49,10 @@ public class Agent {
 //            请用中文回复用户。
 //            """;
 
-    //用于Agent的run方法返回给Main的封装
-    public record Result(String content, LlmClient.UserToken usertoken){}
+//    //用于Agent的run方法返回给Main的封装
+//    public record Result(String content, LlmClient.UserToken usertoken){}
 
-    public Result run(String userInput) {
+    public String run(String userInput) {
         // 添加用户输入
         conversationHistory.add(LlmClient.Message.user(userInput));
 
@@ -96,16 +100,40 @@ public class Agent {
                 conversationHistory.add(
                         LlmClient.Message.assistant(response.content())
                 );
-//                return response.content();
-                return new Result(response.content(), usertoken);
+
+                output.accept("═══════════════════════════════════════════");
+                output.accept("输入TOKEN: " + usertoken.promptTokens());
+                output.accept("输出TOKEN: " + usertoken.completionTokens());
+                output.accept("本次询问消耗TOKEN: " + usertoken.totalTokens());
+                output.accept("本次会话还剩TOKEN: " + usertoken.availableContextTokens());
+                output.accept("═══════════════════════════════════════════");
+                output.accept("");
+                return response.content();
+//                return new Result(response.content(), usertoken);
             }
         }
-        return new Result("达到最大迭代次数限制", usertoken);
-//        return "达到最大迭代次数限制";
+//        return new Result("达到最大迭代次数限制", usertoken);
+        return "达到最大迭代次数限制";
     }
 
     public void clearHistory() {
         conversationHistory.clear();
         conversationHistory.add(LlmClient.Message.system(SYSTEM_PROMPT));
+    }
+
+    /**
+     * 存储Plan的执行结果
+     * */
+    public void rememberPlanResult(String goal, String result) {
+        conversationHistory.add(
+                LlmClient.Message.user("/plan " + goal)
+        );
+        conversationHistory.add(
+                LlmClient.Message.assistant(
+                        "我刚刚执行了一个计划任务。\n" +
+                                "用户目标：" + goal + "\n" +
+                                "执行结果：\n" + result
+                )
+        );
     }
 }

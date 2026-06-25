@@ -26,12 +26,13 @@ public class Main {
         LlmClient llmClient = new DeepSeekClient(apiKey);
 
         ToolRegistry toolRegistry = new ToolRegistry();
-        Agent agent = new Agent(llmClient, toolRegistry);
-        PlanExecuteAgent planExecuteAgent = new PlanExecuteAgent(llmClient, toolRegistry);
+
 //        System.out.println(apiKey);
 //        llmClient.chat(null, null);
 
         try (Terminal terminal = TerminalBuilder.builder().system(true).dumb(true).build()) {
+            Agent agent = new Agent(llmClient, toolRegistry, text -> cliPrint(terminal, text));
+            PlanExecuteAgent planExecuteAgent = new PlanExecuteAgent(llmClient, toolRegistry, text -> cliPrint(terminal, text));
             refreshTerminalColumns(terminal);
             LineReader lineReader = LineReaderBuilder.builder()
                     .terminal(terminal)
@@ -87,31 +88,26 @@ public class Main {
                     try {
                         String result = planExecuteAgent.run(goal);
                         cliPrint(terminal, result);
+
+                        agent.rememberPlanResult(goal,result);
                     } catch (IOException e) {
                         cliPrint(terminal, "❌ 执行计划失败: " + e.getMessage());
                     }
                     continue;
                 }
 
-                Agent.Result result = agent.run(input);
-                String response = result.content();
-                LlmClient.UserToken usertoken = result.usertoken();
+//                Agent.Result result = agent.run(input);
+                String response = agent.run(input);
+//                LlmClient.UserToken usertoken = result.usertoken();
 
 //                List<LlmClient.Message> messages = new ArrayList<>();
 //                messages.add(LlmClient.Message.system("你是一个专业的LLM模型"));
 //                messages.add(LlmClient.Message.user(input));
 
 //                ChatResponse chat = llmClient.chat(messages, null);
-
                 if (response != null && !response.isEmpty()) {
                     cliPrint(terminal, "SmileAgent: " + response);
-                    cliPrint(terminal, "");
-                    cliPrint(terminal, "输入TOKEN: " + usertoken.promptTokens());
-                    cliPrint(terminal, "输出TOKEN: " + usertoken.completionTokens());
-                    cliPrint(terminal, "本次询问消耗TOKEN: " + usertoken.totalTokens());
-                    cliPrint(terminal, "本次会话还剩TOKEN: " + usertoken.availableContextTokens());
                 }
-
             }
 
 //            cliPrint(terminal, "再见 :)");

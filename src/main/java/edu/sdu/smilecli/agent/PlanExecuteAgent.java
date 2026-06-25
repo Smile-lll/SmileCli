@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Plan的时候不考虑上下文了 因为单独LLM chat了 直接返回结果”String“
@@ -20,11 +21,13 @@ public class PlanExecuteAgent {
     private final LlmClient llmClient;
     private final ToolRegistry toolRegistry;
     private final Planner planner;
+    private final Consumer<String> output;//函数变量
 
-    public PlanExecuteAgent(LlmClient llmClient, ToolRegistry toolRegistry) {
+    public PlanExecuteAgent(LlmClient llmClient, ToolRegistry toolRegistry, Consumer<String> output) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.planner = new Planner(llmClient);
+        this.output = output;
     }
 
     public String run(String userInput) throws IOException {
@@ -33,14 +36,12 @@ public class PlanExecuteAgent {
 
         // 2. 显示计划
         String plan = executionPlan.visualize();
-        System.out.println(plan);
-
+//        System.out.println(plan);
+        output.accept(plan);
         // 3. 执行计划
         String result = executePlan(executionPlan);
         return result;
 
-        //TODO 把PlanExecuteAgent的结果加入到ReAct的上下文里
-        //TODO System的部分转换到Main中打印。 打印回调
         //TODO 约束规划必须规划>=5个task  或者 完成简单任务
 
 //        String result = "";
@@ -51,6 +52,7 @@ public class PlanExecuteAgent {
 //            // 2. 显示计划
 //            String plan = executionPlan.visualize();
 //            System.out.println(plan);
+//            output.accept(plan);
 //
 //            // 3. 执行计划
 //            result = executePlan(executionPlan);
@@ -85,7 +87,8 @@ public class PlanExecuteAgent {
             }
             if (!taskId.equals(temp.get(temp.size() - 1))) {
                 String plan = executionPlan.visualize();
-                System.out.println(plan);
+//                System.out.println(plan);
+                output.accept(plan);
             }
 
         }
@@ -93,7 +96,8 @@ public class PlanExecuteAgent {
         executionPlan.markCompleted();
 
         String plan = executionPlan.visualize();
-        System.out.println(plan);
+//        System.out.println(plan);
+        output.accept(plan);
         return "计划执行完成\n" + buildFinalResult(executionPlan);
     }
 
@@ -115,6 +119,7 @@ public class PlanExecuteAgent {
                 if (!response.hasToolCalls()) {
                     task.markCompleted(response.content());
 //                    System.out.println(response.content());
+//                    output.accept(plan);
                     return response.content();
                 }
                 messages.add(LlmClient.Message.assistant(
@@ -138,6 +143,7 @@ public class PlanExecuteAgent {
             return "单次task调用Tool超过最大限制";
 
 //            System.out.println(result);
+//            output.accept(plan);
 
         } catch (Exception e) {
             task.markFailed(e.getMessage());
