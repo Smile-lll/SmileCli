@@ -138,11 +138,29 @@ public class ExecutionPlan {
     }
 
     /**
+     * 获取可执行的任务（依赖都已完成）
+     */
+    public List<Task> getExecutableTasks() {
+        return tasks.values().stream()
+                .filter(t -> t.isExecutable(tasks)) //传入所有任务，在isExecutable取出t所依赖任务
+                .toList();
+    }
+
+    /**
+     * 获取执行顺序
+     */
+    public List<String> getExecutionOrder() {
+        if (executionOrder.isEmpty()) {
+            computeExecutionOrder();
+        }
+        return new ArrayList<>(executionOrder);
+    }
+
+    /**
      * 计算执行顺序存入类变量executionOrder
      */
     private boolean falg = false;//标识是否有环 false表示无环 true表示有环
     HashMap<String, Integer> visited = new HashMap<>();//0表示还没遍历到 1表示正在遍历  2表示遍历完成
-
     public boolean computeExecutionOrder() {
         falg = false;
         visited.clear();
@@ -179,5 +197,59 @@ public class ExecutionPlan {
         }
         visited.put(task.getId(), 2);
         executionOrder.add(0, task.getId());//倒叙插入 顺序执行
+    }
+
+    /**
+     * 可视化计划
+     */
+    public String visualize() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("╔═══════════════════════════════════════════════════════════\n");
+        sb.append(String.format("║  执行计划: %-46s%n", goal.length() > 46 ? goal.substring(0, 43) + "..." : goal));
+        sb.append("╠═══════════════════════════════════════════════════════════\n");
+
+        List<String> order = getExecutionOrder();
+        for (int i = 0; i < order.size(); i++) {
+            String taskId = order.get(i);
+            Task task = tasks.get(taskId);
+            String statusIcon = getStatusIcon(task.getStatus());
+            String deps = task.getDependencies().isEmpty() ? "无" :
+                    String.join(",", task.getDependencies());
+
+            sb.append(String.format("║  %d. %s %-20s ", i + 1, statusIcon, task.getId()));
+            sb.append(String.format("[%-10s] 依赖: %-15s%n",
+                    task.getType(), deps));
+            String desc = task.getDescription().length() > 50
+                    ? task.getDescription().substring(0, 47) + "..."
+                    : task.getDescription();
+            sb.append(String.format("║     %-53s%n", desc));
+        }
+
+        sb.append("╚═══════════════════════════════════════════════════════════\n");
+        sb.append(String.format("   进度: %.0f%% | 状态: %s%n",
+                getProgress() * 100, status));
+
+        return sb.toString();
+    }
+
+    private String getStatusIcon(Task.TaskStatus status) {
+        return switch (status) {
+            case PENDING -> "⏳";
+            case RUNNING -> "▶️";
+            case COMPLETED -> "✅";
+            case FAILED -> "❌";
+            case SKIPPED -> "⏭️";
+        };
+    }
+
+    /**
+     * 获取执行进度
+     */
+    public double getProgress() {
+        if (tasks.isEmpty()) return 1.0;
+        long completed = tasks.values().stream()
+                .filter(t -> t.getStatus() == Task.TaskStatus.COMPLETED)
+                .count();
+        return (double) completed / tasks.size();
     }
 }

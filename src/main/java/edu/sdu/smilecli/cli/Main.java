@@ -1,6 +1,7 @@
 package edu.sdu.smilecli.cli;
 
 import edu.sdu.smilecli.agent.Agent;
+import edu.sdu.smilecli.agent.PlanExecuteAgent;
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
 import edu.sdu.smilecli.tool.ToolRegistry;
@@ -26,6 +27,7 @@ public class Main {
 
         ToolRegistry toolRegistry = new ToolRegistry();
         Agent agent = new Agent(llmClient, toolRegistry);
+        PlanExecuteAgent planExecuteAgent = new PlanExecuteAgent(llmClient, toolRegistry);
 //        System.out.println(apiKey);
 //        llmClient.chat(null, null);
 
@@ -75,6 +77,22 @@ public class Main {
                     continue;
                 }
 
+                if (input.toLowerCase().startsWith("/plan")) {
+                    String goal = input.substring("/plan".length()).trim();
+                    if (goal.isEmpty()) {
+                        cliPrint(terminal, "请输入要规划的任务，例如：/plan 创建一个 Spring Boot 项目");
+                        continue;
+                    }
+
+                    try {
+                        String result = planExecuteAgent.run(goal);
+                        cliPrint(terminal, result);
+                    } catch (IOException e) {
+                        cliPrint(terminal, "❌ 执行计划失败: " + e.getMessage());
+                    }
+                    continue;
+                }
+
                 Agent.Result result = agent.run(input);
                 String response = result.content();
                 LlmClient.UserToken usertoken = result.usertoken();
@@ -107,7 +125,8 @@ public class Main {
 
     private static final String[] COMMANDS = new String[]{
             "/exit 退出SmileCli",
-            "/clear 清空对话Message"
+            "/clear 清空对话Message",
+            "/plan Plan & DAG",
     };
 
     private static String loadEnvValue(String key) {

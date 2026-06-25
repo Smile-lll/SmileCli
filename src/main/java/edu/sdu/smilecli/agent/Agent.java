@@ -76,9 +76,9 @@ public class Agent {
 
                 // 执行每个工具调用
                 for (LlmClient.ToolCall toolCall : response.toolCalls()) {
-                    log.info("执行工具调用 id: {}", toolCall.id());
-                    log.info("function.name: {}", toolCall.function().name());
-                    log.info("function.arguments: {}", toolCall.function().arguments());
+//                    log.info("执行工具调用 id: {}", toolCall.id());
+//                    log.info("function.name: {}", toolCall.function().name());
+//                    log.info("function.arguments: {}", toolCall.function().arguments());
                     String result = toolRegistry.executeTool(
                             toolCall.function().name(),
                             toolCall.function().arguments()
