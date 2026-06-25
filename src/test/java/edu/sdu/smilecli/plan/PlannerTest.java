@@ -38,7 +38,7 @@ public class PlannerTest extends TestCase {
 
         return null;
     }
-    public void testCreatePlan() throws JsonProcessingException {
+    public void testCreatePlan() throws IOException {
 
         String apiKey;
         apiKey = loadEnvValue("DEEPSEEK_API_KEY");
@@ -48,6 +48,7 @@ public class PlannerTest extends TestCase {
         }
         LlmClient llmClient = new DeepSeekClient(apiKey);
 
+//        new Planner(llmClient).createPlan("这是一个测试PLAN的goal,请给我规划一个创建一个SpringBoot项目的规划。(task之间但有环，互相依赖了 我想测试我的DAG)");
         new Planner(llmClient).createPlan("这是一个测试PLAN的goal,请给我规划一个创建一个SpringBoot项目的规划。");
     }
 }

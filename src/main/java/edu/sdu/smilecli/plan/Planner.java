@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -68,7 +69,7 @@ public class Planner {
      * 与LLM交互 将用户内容交予LLM 得到planJson 之后调用 parsePlan
      *
      */
-    public ExecutionPlan createPlan(String goal) throws JsonProcessingException {
+    public ExecutionPlan createPlan(String goal) throws IOException {
 
         // 构建规划请求
         List<LlmClient.Message> messages = Arrays.asList(
@@ -85,11 +86,11 @@ public class Planner {
     /**
      * 解析LLM返回的计划JSON
      */
-    private ExecutionPlan parsePlan(String goal, String planJson) throws JsonProcessingException {
+    private ExecutionPlan parsePlan(String goal, String planJson) throws IOException {
         String cleaned = planJson.replaceAll("```json\\s*", "")
                 .replaceAll("```\\s*", "")
                 .trim();
-//        System.out.println("LLM返回的JSON：\n"+cleaned);
+        System.out.println("LLM返回的JSON：\n"+cleaned);
         JsonNode root = mapper.readTree(cleaned);
         String summary = root.path("summary").asText("");
         JsonNode tasksNode = root.path("tasks");
@@ -134,9 +135,12 @@ public class Planner {
                 }
             }
         }
+        //已全部加入ExecutionPlan
 
-        //TODO 判断executionPlan有没有环 如果环形存在 抛出异常 不存在给出Task的执行顺序保证依赖顺序--->DAG有向无环图的遍历问题
-
+        //判断executionPlan有没有环 如果环形存在 抛出异常 不存在给出Task的执行顺序保证依赖顺序--->DAG有向无环图的遍历问题(leetcode207/210)
+        if (!executionPlan.computeExecutionOrder()) {
+            throw new IOException("计划中存在循环依赖");
+        }
 
         return executionPlan;
     }

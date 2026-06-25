@@ -56,7 +56,6 @@ public class ExecutionPlan {
     private long startTime;
     private long endTime;
 
-
     public enum PlanStatus {
         CREATED,      // 刚创建
         RUNNING,      // 执行中
@@ -136,5 +135,49 @@ public class ExecutionPlan {
      */
     public Collection<Task> getAllTasks() {
         return tasks.values();
+    }
+
+    /**
+     * 计算执行顺序存入类变量executionOrder
+     */
+    private boolean falg = false;//标识是否有环 false表示无环 true表示有环
+    HashMap<String, Integer> visited = new HashMap<>();//0表示还没遍历到 1表示正在遍历  2表示遍历完成
+
+    public boolean computeExecutionOrder() {
+        falg = false;
+        visited.clear();
+        executionOrder.clear();//防止未来对于一个旧的计划重复计算顺序的时候旧计划中的顺序被保留  目前（2026.6.25）来看可以不用
+        for (Task task : tasks.values()) {
+            visited.put(task.getId(), 0);
+        }
+        for (Task task : tasks.values()) {
+            if (visited.get(task.getId()) == 0) {
+                dfs(task);
+            }
+        }
+        if(falg){
+            return false;
+        }else{
+            return true;
+        }
+    }
+
+    private void dfs(Task task) {
+        if (visited.get(task.getId()) == 1) {
+            falg = true;
+            return;
+        } else if (visited.get(task.getId()) == 2) {
+            return;
+        }
+
+        visited.put(task.getId(), 1);
+        for (String depId : task.getDependents()) {
+            Task dep = tasks.get(depId);
+            if (dep != null) {
+                dfs(dep);
+            }
+        }
+        visited.put(task.getId(), 2);
+        executionOrder.add(0, task.getId());//倒叙插入 顺序执行
     }
 }
