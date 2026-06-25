@@ -40,7 +40,26 @@ public class PlanExecuteAgent {
         return result;
 
         //TODO 把PlanExecuteAgent的结果加入到ReAct的上下文里
+        //TODO System的部分转换到Main中打印。 打印回调
         //TODO 约束规划必须规划>=5个task  或者 完成简单任务
+
+//        String result = "";
+//        for (int i = 0; i < 5; i++) {
+//            // 1. 创建执行计划
+//            ExecutionPlan executionPlan = planner.createPlan(userInput);
+//
+//            // 2. 显示计划
+//            String plan = executionPlan.visualize();
+//            System.out.println(plan);
+//
+//            // 3. 执行计划
+//            result = executePlan(executionPlan);
+//            if (executionPlan.getStatus() == ExecutionPlan.PlanStatus.COMPLETED) {
+//                return result;
+//            }
+//        }
+//        return "重试5次，该计划依旧失败\n" + result;
+        //这样的重新尝试 可以但是一些文件可能会重复创造 没必要
 
         // 4. 返回结果
 //        return buildResult(plan);
