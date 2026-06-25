@@ -67,6 +67,9 @@ public class Planner {
      *
      */
     public ExecutionPlan createPlan(String goal) throws IOException {
+        if (isSimpleGoal(goal)) {
+            return createMinimalPlan(goal);
+        }
 
         // 构建规划请求
         List<LlmClient.Message> messages = Arrays.asList(
@@ -154,5 +157,80 @@ public class Planner {
             case "VERIFICATION" -> Task.TaskType.VERIFICATION;
             default -> Task.TaskType.ANALYSIS;
         };
+    }
+
+    private boolean isSimpleGoal(String goal) {
+        if (goal == null) {
+            return false;
+        }
+
+        String normalized = goal.trim();
+        if (normalized.isEmpty()) {
+            return false;
+        }
+
+        boolean hasMultiStepCue = normalized.contains("然后")
+                || normalized.contains("并且")
+                || normalized.contains("并")
+                || normalized.contains("再")
+                || normalized.contains("最后")
+                || normalized.contains("同时")
+                || normalized.contains("先")
+                || normalized.contains("之后")
+                || normalized.contains("接着")
+                || normalized.contains("以及");
+        if (hasMultiStepCue) {
+            return false;
+        }
+
+        if (normalized.length() > 30) {
+            return false;
+        }
+
+        return normalized.contains("列出")
+                || normalized.contains("查看")
+                || normalized.contains("读取")
+                || normalized.contains("显示")
+                || normalized.contains("执行")
+                || normalized.contains("运行")
+                || normalized.contains("搜索")
+                || normalized.contains("当前目录")
+                || normalized.contains("文件");
+    }
+
+    private ExecutionPlan createMinimalPlan(String goal) {
+        ExecutionPlan plan = new ExecutionPlan("plan_" + System.currentTimeMillis(), goal);
+        plan.setSummary(buildMinimalSummary(goal));
+        plan.addTask(new Task("task_1", goal.trim(), inferSimpleTaskType(goal)));
+        if (!plan.computeExecutionOrder()) {
+            throw new IllegalStateException("简单计划不应出现循环依赖");
+        }
+        return plan;
+    }
+
+    private String buildMinimalSummary(String goal) {
+        String normalized = goal == null ? "" : goal.trim();
+        if (normalized.isEmpty()) {
+            return "执行简单任务";
+        }
+        return "直接执行简单任务：" + normalized;
+    }
+
+    private Task.TaskType inferSimpleTaskType(String goal) {
+        String normalized = goal == null ? "" : goal.trim();
+        if (normalized.contains("读取") || normalized.contains("打开") || normalized.contains("查看")
+                && normalized.contains("文件")) {
+            return Task.TaskType.FILE_READ;
+        }
+        if (normalized.contains("写入") || normalized.contains("修改") || normalized.contains("创建文件")) {
+            return Task.TaskType.FILE_WRITE;
+        }
+        if (normalized.contains("分析") || normalized.contains("总结") || normalized.contains("解释")) {
+            return Task.TaskType.ANALYSIS;
+        }
+        if (normalized.contains("验证") || normalized.contains("检查")) {
+            return Task.TaskType.VERIFICATION;
+        }
+        return Task.TaskType.COMMAND;
     }
 }

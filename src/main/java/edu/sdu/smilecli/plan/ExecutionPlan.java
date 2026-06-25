@@ -174,9 +174,9 @@ public class ExecutionPlan {
             }
         }
         if(falg){
-            return false;
+            return false; //有环返回false
         }else{
-            return true;
+            return true; //无环返回true
         }
     }
 

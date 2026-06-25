@@ -42,7 +42,6 @@ public class PlanExecuteAgent {
         String result = executePlan(executionPlan);
         return result;
 
-        //TODO 约束规划必须规划>=5个task  或者 完成简单任务
 
 //        String result = "";
 //        for (int i = 0; i < 5; i++) {
