@@ -36,17 +36,7 @@ public class PlanExecuteAgent {
         System.out.println(plan);
 
         // 3. 执行计划
-        String result = "";
-        for (int i = 0; i < 5; i++) {
-            result = executePlan(executionPlan);
-            if (executionPlan.getStatus() == ExecutionPlan.PlanStatus.COMPLETED) {
-                break;
-            }
-        }
-        if (executionPlan.getStatus() == ExecutionPlan.PlanStatus.FAILED) {
-            return "重试5次，该计划依旧失败\n" + result;
-        }
-
+        String result = executePlan(executionPlan);
         return result;
 
         //TODO 把PlanExecuteAgent的结果加入到ReAct的上下文里
