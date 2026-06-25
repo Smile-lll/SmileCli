@@ -112,7 +112,7 @@ public class Planner {
             // 对类型处理一下 保证和Task规定类型对应上（也是避免幻觉问题）
             Task.TaskType type = parseTaskType(typeStr); //其实感觉也有点多余 就是不会报错而已 如果真的出现幻觉 还是会对不到真确的位置 只是对应到“分析”Task上
             Task task = new Task(newId, description, type);
-            executionPlan.addTask(task);
+            executionPlan.addTask(task); //虽然addTask写了加入依赖 但是这里没用到 所以第一次的bug没发现
         }
 
         // 第二遍：建立依赖和被依赖关系

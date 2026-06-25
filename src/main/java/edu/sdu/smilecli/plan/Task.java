@@ -83,6 +83,7 @@ public class Task {
     private String error;                 // 错误信息
     private final List<String> dependencies;      // 依赖的任务ID
     private final List<String> dependents;        // 被依赖的任务ID -> 其他任务依赖该任务
+    /* dependencies(A)->B->(C)dependents */
     private long startTime;               // 开始时间
     private long endTime;                 // 结束时间
 
