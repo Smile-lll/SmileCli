@@ -87,7 +87,7 @@ public class Planner {
         String cleaned = planJson.replaceAll("```json\\s*", "")
                 .replaceAll("```\\s*", "")
                 .trim();
-        System.out.println("LLM返回的JSON：\n"+cleaned);
+//        System.out.println("LLM返回的JSON：\n"+cleaned);
         JsonNode root = mapper.readTree(cleaned);
         String summary = root.path("summary").asText("");
         JsonNode tasksNode = root.path("tasks");

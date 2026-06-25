@@ -11,6 +11,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Plan的时候不考虑上下文了 因为单独LLM chat了 直接返回结果”String“
+ * */
+
 @Slf4j
 public class PlanExecuteAgent {
     private final LlmClient llmClient;
@@ -24,8 +28,6 @@ public class PlanExecuteAgent {
     }
 
     public String run(String userInput) throws IOException {
-        List<Agent.Result> results = new ArrayList<>();
-
         // 1. 创建执行计划
         ExecutionPlan executionPlan = planner.createPlan(userInput);
 
@@ -35,6 +37,9 @@ public class PlanExecuteAgent {
 
         // 3. 执行计划
         return executePlan(executionPlan);
+
+        //TODO 把PlanExecuteAgent的结果加入到ReAct的上下文里
+        //TODO 约束规划必须规划>=5个task  或者 完成简单任务
 
         // 4. 返回结果
 //        return buildResult(plan);
@@ -47,7 +52,7 @@ public class PlanExecuteAgent {
 
         StringBuilder finalResult = new StringBuilder();
 
-        List<String> temp=executionPlan.getExecutionOrder();
+        List<String> temp = executionPlan.getExecutionOrder();
         for (String taskId : temp) {
             Task task = executionPlan.getTask(taskId);
             if (task == null) continue;
@@ -58,7 +63,7 @@ public class PlanExecuteAgent {
                 executionPlan.markFailed();
                 return "计划执行失败：任务 " + task.getId() + " 失败\n" + result;
             }
-            if(!taskId.equals(temp.get(temp.size()-1))){
+            if (!taskId.equals(temp.get(temp.size() - 1))) {
                 String plan = executionPlan.visualize();
                 System.out.println(plan);
             }
@@ -82,15 +87,14 @@ public class PlanExecuteAgent {
             messages.add(LlmClient.Message.user(buildTaskContext(executionPlan, task)));
 
             StringBuilder toolResults = new StringBuilder();
-
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 30; i++) {
                 LlmClient.ChatResponse response = llmClient.chat(
                         messages,
                         toolRegistry.getToolDefinitions()
                 );
                 if (!response.hasToolCalls()) {
                     task.markCompleted(response.content());
-                    System.out.println(response.content());
+//                    System.out.println(response.content());
                     return response.content();
                 }
                 messages.add(LlmClient.Message.assistant(
@@ -104,15 +108,17 @@ public class PlanExecuteAgent {
                     );
                     toolResults.append(result).append("\n");
                     messages.add(LlmClient.Message.tool(
-                            result,toolCall.id()
+                            result, toolCall.id()
 
                     ));
                 }
             }
-            String result = toolResults.toString();
-            task.markCompleted(result);
-            System.out.println(result);
-            return result;
+
+            task.markFailed("单次task调用Tool超过最大限制");
+            return "单次task调用Tool超过最大限制";
+
+//            System.out.println(result);
+
         } catch (Exception e) {
             task.markFailed(e.getMessage());
             return "任务执行失败: " + e.getMessage();
