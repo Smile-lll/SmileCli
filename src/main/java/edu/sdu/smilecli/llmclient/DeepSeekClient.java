@@ -67,7 +67,7 @@ public class DeepSeekClient implements LlmClient {
             ObjectNode msgNode = messagesArr.addObject();
             msgNode.put("role", msg.role());
             msgNode.put("content", msg.content());
-            // 如果是toolCall
+            // 如果是toolCall  虽然请求不会有toolCall 但是要是要写到请求体中 表示上下文。
             if (msg.toolCalls() != null && !msg.toolCalls().isEmpty()) {
                 ArrayNode toolCallsArr = msgNode.putArray("tool_calls");
                 for (ToolCall toolCall : msg.toolCalls()) {

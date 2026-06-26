@@ -1,6 +1,7 @@
 package edu.sdu.smilecli.agent;
 
 import edu.sdu.smilecli.llmclient.LlmClient;
+import edu.sdu.smilecli.memory.ConversationHistoryCompactor;
 import edu.sdu.smilecli.tool.ToolRegistry;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,12 +17,14 @@ public class Agent {
     private static final int MAX_ITERATIONS = 10;//最大React次数
     LlmClient.UserToken usertoken;
     private final Consumer<String> output;
+    private final ConversationHistoryCompactor historyCompactor;
 
     public Agent(LlmClient llmClient, ToolRegistry toolRegistry, Consumer<String> output) {
         this.llmClient = llmClient;
         this.toolRegistry = toolRegistry;
         this.conversationHistory = new ArrayList<>();
         this.output = output;
+        this.historyCompactor = new ConversationHistoryCompactor(llmClient);// 压缩也是用LLM压缩 所以需要传入一个LLMlient
 
         // 添加系统提示
         conversationHistory.add(LlmClient.Message.system(SYSTEM_PROMPT));
@@ -59,6 +62,9 @@ public class Agent {
         int iteration = 0;
         while (iteration < MAX_ITERATIONS) {
             iteration++;
+
+            // 短期记忆管理
+            historyCompactor.compactIfNeeded(conversationHistory);
 
             // 调用 LLM
             LlmClient.ChatResponse response = llmClient.chat(
@@ -138,4 +144,3 @@ public class Agent {
     }
 }
 
-//todo memory
