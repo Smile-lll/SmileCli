@@ -1,12 +1,18 @@
 package edu.sdu.smilecli.memory;
 
 import edu.sdu.smilecli.llmclient.LlmClient;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+@Slf4j
 public class ConversationHistoryCompactor {
     private static final int DEFAULT_RETAIN_RECENT_ROUNDS = 3;
     static final int INTTRIGGER_TOKENS = 800_000; //压缩上下文的阈值
+    private static final int MAX_SUMMARY_INPUT_CHARS = 60_000;//压缩摘要的最大输入字符数
     private static final String SUMMARY_PROMPT = """
             请把下面的对话历史压缩成简明摘要，保留：
             1. 用户提出的关键诉求与目标
@@ -40,5 +46,90 @@ public class ConversationHistoryCompactor {
         if(conversationHistory==null||conversationHistory.isEmpty()) return false;
         int currentTokens = TokenBudget.estimateMessagesTokens(conversationHistory);
         if (currentTokens < INTTRIGGER_TOKENS) return false;
+
+        int systemEnd = "system".equals(conversationHistory.get(0).role()) ? 1 : 0; //0 Message是系统消息 从1开始找用户信息
+        //assistant和tool信息不管
+
+        List<Integer> userIndices = new ArrayList<>();
+        for (int i = systemEnd; i < conversationHistory.size(); i++) {
+            if ("user".equals(conversationHistory.get(i).role())) {
+                userIndices.add(i);
+            }
+        }
+        if (userIndices.size() <= retainRecentRounds) {
+            log.info("compactIfNeeded skip: only {} user turns, < retain {}",
+                    userIndices.size(), retainRecentRounds);
+            return false;
+        }
+
+        int splitIdx = userIndices.get(userIndices.size() - retainRecentRounds);
+        if (splitIdx <= systemEnd) return false;
+
+        List<LlmClient.Message> oldMsgs = new ArrayList<>(conversationHistory.subList(systemEnd, splitIdx));
+        if (oldMsgs.isEmpty()) return false;
+
+        // 准备总结
+        String summary;
+        try {
+            summary = summarize(oldMsgs);
+        } catch (IOException e) {
+            log.warn("conversation summary LLM call failed; skip compaction", e);
+            return false;
+        }
+        if (summary == null || summary.isBlank()) {
+            log.warn("conversation summary returned empty; skip compaction");
+            return false;
+        }//summary是LLM返回的总结
+        // 重构conversationHistory
+        List<LlmClient.Message> rebuilt = new ArrayList<>();
+        for (int i = 0; i < systemEnd; i++) {
+            rebuilt.add(conversationHistory.get(i));
+        }
+        rebuilt.add(LlmClient.Message.user("[已压缩的历史对话摘要]\n" + summary.trim()));
+        rebuilt.add(LlmClient.Message.assistant("好的，我已了解之前的上下文，请继续。"));
+        rebuilt.addAll(conversationHistory.subList(splitIdx, conversationHistory.size()));
+
+        int afterTokens = TokenBudget.estimateMessagesTokens(rebuilt);
+        conversationHistory.clear();
+        conversationHistory.addAll(rebuilt);
+        log.info(String.format(Locale.ROOT,
+                "compacted conversationHistory: tokens %d -> %d, messages %d -> %d, summary chars %d",
+                currentTokens, afterTokens, userIndices.size() + systemEnd /* 估值 */, rebuilt.size(),
+                summary.length()));
+        return true;
+    }
+
+    /**
+     * 真正调 LLM 摘要。包可见以便测试通过子类替换。
+     */
+    protected String summarize(List<LlmClient.Message> messages) throws IOException {
+        if (llmClient == null) {
+            throw new IOException("LLM client not configured");
+        }
+        StringBuilder sb = new StringBuilder();
+        for (LlmClient.Message m : messages) {
+            sb.append(m.role().toUpperCase(Locale.ROOT)).append(": ");
+            if (m.content() != null) {
+                sb.append(m.content());
+            }
+            if (m.toolCalls() != null) {
+                for (LlmClient.ToolCall tc : m.toolCalls()) {
+                    sb.append("\n  TOOL_CALL ").append(tc.function().name())
+                            .append(": ").append(tc.function().arguments());
+                }
+            }
+            sb.append("\n\n");
+            if (sb.length() > MAX_SUMMARY_INPUT_CHARS) {
+                sb.append("...(超长内容已截断)\n");
+                break;
+            }
+        }
+        String prompt = String.format(SUMMARY_PROMPT, sb.toString());
+        List<LlmClient.Message> req = List.of(
+                LlmClient.Message.system("你是一个对话摘要助手，只输出摘要本身，不输出元描述。"),
+                LlmClient.Message.user(prompt)
+        );
+        LlmClient.ChatResponse response = llmClient.chat(req, null);
+        return response == null ? null : response.content();
     }
 }
