@@ -112,7 +112,7 @@ public class LongTermMemory {
             String scope,
             String projectPath
     ) {
-        if (!memory.content().equals(content)) {//todo 优化成语义去重
+        if (!memory.content().equals(content)) {//todo 优化成语义去重 向量匹配
             return false;
         }
 

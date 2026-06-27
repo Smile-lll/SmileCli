@@ -13,7 +13,7 @@ import java.util.Locale;
 @Slf4j
 public class ConversationHistoryCompactor {
     private static final int DEFAULT_RETAIN_RECENT_ROUNDS = 3;
-    static final int INTTRIGGER_TOKENS = 800_000; //压缩上下文的阈值
+    static final int INTTRIGGER_TOKENS = 700_000; //压缩上下文的阈值 从800000改为700000 留一部分TOKEN给实际的时候发送的LLM加了长期记忆。
     private static final int MAX_SUMMARY_INPUT_CHARS = 60_000;//压缩摘要的最大输入字符数
     private static final String SUMMARY_PROMPT = """
             请把下面的对话历史压缩成简明摘要，保留：
@@ -73,7 +73,7 @@ public class ConversationHistoryCompactor {
     /**
      * 判断是否需要压缩短期记忆
      * */
-    public boolean compactIfNeeded(List<LlmClient.Message> conversationHistory, LongTermMemory longTermMemory) throws IOException {
+    public boolean compactIfNeeded(List<LlmClient.Message> conversationHistory, LongTermMemory longTermMemory){
         if (conversationHistory == null || conversationHistory.isEmpty()) return false;
         int currentTokens = TokenBudget.estimateMessagesTokens(conversationHistory);
         if (currentTokens < INTTRIGGER_TOKENS) return false;
@@ -106,7 +106,7 @@ public class ConversationHistoryCompactor {
             for (MemoryEntry memory : memories) {
                 longTermMemory.store(memory.content(), "project");//默认是project级别的
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.warn("extract long-term memories failed; skip long-term memory storing", e);
         }
 

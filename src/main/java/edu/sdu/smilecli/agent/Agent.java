@@ -60,7 +60,7 @@ public class Agent {
 //    //用于Agent的run方法返回给Main的封装
 //    public record Result(String content, LlmClient.UserToken usertoken){}
 
-    public String run(String userInput) throws IOException {
+    public String run(String userInput) {
         // 添加用户输入
         conversationHistory.add(LlmClient.Message.user(userInput));
 
@@ -71,9 +71,21 @@ public class Agent {
             // 短期记忆管理 如果需要token预估达到800_000就压缩，没有不压缩
             historyCompactor.compactIfNeeded(conversationHistory, longTermMemory);
 
+            //长期记忆管理：查看当前询问是否需要注入长期记忆（查找+注入）
+            List<LlmClient.Message> longTermHistory = new ArrayList<>();
+            longTermHistory.add(conversationHistory.get(0)); // system prompt
+            longTermHistory.add(LlmClient.Message.system(buildLongTermMemoryContext())); // 添加长期记忆的prompt
+            longTermHistory.addAll(conversationHistory.subList(1, conversationHistory.size()));
+
             // 调用 LLM
+//            LlmClient.ChatResponse response = llmClient.chat(
+//                    conversationHistory,
+//                    toolRegistry.getToolDefinitions()
+////                    null
+//            ); 原本无加入长期记忆版本的调用
+            // 加入长期记忆版本
             LlmClient.ChatResponse response = llmClient.chat(
-                    conversationHistory,
+                    longTermHistory,
                     toolRegistry.getToolDefinitions()
 //                    null
             );
@@ -126,6 +138,25 @@ public class Agent {
 //        return new Result("达到最大迭代次数限制", usertoken);
         return "达到最大迭代次数限制";
     }
+
+    private String buildLongTermMemoryContext() {
+        List<MemoryEntry> memories = longTermMemory.list();
+
+        if (memories.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("以下是可参考的长期记忆：\n");
+
+        for (MemoryEntry memory : memories) {
+            sb.append("- ")
+                    .append(memory.content())
+                    .append("\n");
+        }
+
+        return sb.toString();
+    } //todo 目前是全量注入 等完成向量数据库之后 优化成向量搜索
 
     public void clearHistory() {
         conversationHistory.clear();
