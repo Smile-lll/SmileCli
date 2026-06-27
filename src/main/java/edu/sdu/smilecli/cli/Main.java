@@ -4,6 +4,7 @@ import edu.sdu.smilecli.agent.Agent;
 import edu.sdu.smilecli.agent.PlanExecuteAgent;
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
+import edu.sdu.smilecli.memory.MemoryEntry;
 import edu.sdu.smilecli.memory.TokenBudget;
 import edu.sdu.smilecli.tool.ToolRegistry;
 import org.jline.reader.EndOfFileException;
@@ -14,6 +15,7 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 
 import java.io.*;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
@@ -79,15 +81,24 @@ public class Main {
                     continue;
                 }
 
-                if("/memory".equalsIgnoreCase(input)){
-                    int availableTokens=TokenBudget.getAvailableTokens(agent.getConversationHistory());
-                    cliPrint(terminal, "总可用TOKEN数:1000000\n"+"当前可用TOKEN数:"+availableTokens);
+                if ("/memory".equalsIgnoreCase(input)) {
+                    int availableTokens = TokenBudget.getAvailableTokens(agent.getConversationHistory());
+                    cliPrint(terminal, "总可用TOKEN数:1000000\n" + "当前可用TOKEN数:" + availableTokens);
                     continue;
                 }
 
-                if(input.toLowerCase().startsWith("/save")){
+                if ("/memory list".equalsIgnoreCase(input)) {
+                    List<MemoryEntry> memories = agent.listLongTermMemory();
+                    cliPrint(terminal, "以下是你的长期记忆:");
+                    for (MemoryEntry memory : memories) {
+                        cliPrint(terminal, memory.scope() + ": " + memory.content());
+                    }
+                    continue;
+                }
+
+                if (input.toLowerCase().startsWith("/save")) {
                     String toSave = input.substring("/plan".length()).trim();
-                    if(toSave.isEmpty()){
+                    if (toSave.isEmpty()) {
                         cliPrint(terminal, "请提供要保存的内容，例如：/save 这个项目使用 Java 17");
                         continue;
                     }
@@ -121,7 +132,7 @@ public class Main {
                         String result = planExecuteAgent.run(goal);
                         cliPrint(terminal, result);
 
-                        agent.rememberPlanResult(goal,result);
+                        agent.rememberPlanResult(goal, result);
                     } catch (IOException e) {
                         cliPrint(terminal, "❌ 执行计划失败: " + e.getMessage());
                     }
@@ -157,7 +168,8 @@ public class Main {
             "/plan Plan & DAG",
             "/memory 查看当前上下文TOKEN使用情况",
             "/save <内容> 保存项目级长期记忆",
-            "/save --global <内容> 保存全局长期记忆"
+            "/save --global <内容> 保存全局长期记忆",
+            "/memory list 查看长期记忆"
     };
 
     private static String loadEnvValue(String key) {

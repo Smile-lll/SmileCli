@@ -3,6 +3,7 @@ package edu.sdu.smilecli.agent;
 import edu.sdu.smilecli.llmclient.LlmClient;
 import edu.sdu.smilecli.memory.ConversationHistoryCompactor;
 import edu.sdu.smilecli.memory.LongTermMemory;
+import edu.sdu.smilecli.memory.MemoryEntry;
 import edu.sdu.smilecli.tool.ToolRegistry;
 import lombok.extern.slf4j.Slf4j;
 
@@ -152,6 +153,10 @@ public class Agent {
 
     public void saveLongTermMemory(String content, String scope) {
         longTermMemory.store(content, scope);
+    }
+
+    public List<MemoryEntry> listLongTermMemory() {
+        return longTermMemory.list();
     }
 }
 
