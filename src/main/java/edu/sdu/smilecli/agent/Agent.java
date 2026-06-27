@@ -7,6 +7,7 @@ import edu.sdu.smilecli.memory.MemoryEntry;
 import edu.sdu.smilecli.tool.ToolRegistry;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -59,7 +60,7 @@ public class Agent {
 //    //用于Agent的run方法返回给Main的封装
 //    public record Result(String content, LlmClient.UserToken usertoken){}
 
-    public String run(String userInput) {
+    public String run(String userInput) throws IOException {
         // 添加用户输入
         conversationHistory.add(LlmClient.Message.user(userInput));
 
@@ -68,7 +69,7 @@ public class Agent {
             iteration++;
 
             // 短期记忆管理 如果需要token预估达到800_000就压缩，没有不压缩
-            historyCompactor.compactIfNeeded(conversationHistory);
+            historyCompactor.compactIfNeeded(conversationHistory, longTermMemory);
 
             // 调用 LLM
             LlmClient.ChatResponse response = llmClient.chat(

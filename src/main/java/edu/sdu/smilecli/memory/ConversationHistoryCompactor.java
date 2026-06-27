@@ -1,5 +1,7 @@
 package edu.sdu.smilecli.memory;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.sdu.smilecli.llmclient.LlmClient;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,6 +29,35 @@ public class ConversationHistoryCompactor {
             %s
             === 待压缩的对话（结束）===
             """;
+    private static final String LongTerm_PROMPT = """
+             请从下面的对话中提取适合长期保存的记忆。
+            
+             只提取长期稳定、有复用价值的信息，例如：
+             1. 用户的长期偏好
+             2. 用户对项目的长期目标
+             3. 项目的稳定背景信息
+             4. 已经明确达成的设计决策
+            
+             不要保存：
+             1. 临时问题
+             2. 一次性命令结果
+             3. 过长的文件内容
+             4. 不确定的推测
+             5. 已经在短期摘要中临时保留即可的信息
+            
+             === 待提取的对话 ===
+             %s
+             === 待提取的对话（结束）===
+            
+            请只返回 JSON 数组：
+            [
+              {
+                "content": "记忆内容",
+                "scope": "project"
+              }
+            ]
+            """;
+
     private LlmClient llmClient;
     private final int retainRecentRounds;
 
@@ -42,8 +73,8 @@ public class ConversationHistoryCompactor {
     /**
      * 判断是否需要压缩短期记忆
      * */
-    public boolean compactIfNeeded(List<LlmClient.Message> conversationHistory) {
-        if(conversationHistory==null||conversationHistory.isEmpty()) return false;
+    public boolean compactIfNeeded(List<LlmClient.Message> conversationHistory, LongTermMemory longTermMemory) throws IOException {
+        if (conversationHistory == null || conversationHistory.isEmpty()) return false;
         int currentTokens = TokenBudget.estimateMessagesTokens(conversationHistory);
         if (currentTokens < INTTRIGGER_TOKENS) return false;
 
@@ -68,7 +99,18 @@ public class ConversationHistoryCompactor {
         List<LlmClient.Message> oldMsgs = new ArrayList<>(conversationHistory.subList(systemEnd, splitIdx));
         if (oldMsgs.isEmpty()) return false;
 
-        // 准备总结
+        //确定需要压缩->
+        // 1、提取长期记忆 (设计是压缩时候才自动提取长期记忆，其他时候需要主动存储/save ||/save --global)
+        try {
+            List<MemoryEntry> memories = extractLongTermMemories(oldMsgs);
+            for (MemoryEntry memory : memories) {
+                longTermMemory.store(memory.content(), "project");//默认是project级别的
+            }
+        } catch (IOException e) {
+            log.warn("extract long-term memories failed; skip long-term memory storing", e);
+        }
+
+        // 2、准备总结
         String summary;
         try {
             summary = summarize(oldMsgs);
@@ -80,6 +122,7 @@ public class ConversationHistoryCompactor {
             log.warn("conversation summary returned empty; skip compaction");
             return false;
         }//summary是LLM返回的总结
+
         // 重构conversationHistory
         List<LlmClient.Message> rebuilt = new ArrayList<>();
         for (int i = 0; i < systemEnd; i++) {
@@ -132,4 +175,68 @@ public class ConversationHistoryCompactor {
         LlmClient.ChatResponse response = llmClient.chat(req, null);
         return response == null ? null : response.content();
     }
+
+    ObjectMapper mapper = new ObjectMapper();
+
+    private List<MemoryEntry> extractLongTermMemories(List<LlmClient.Message> messages) throws IOException {
+        if (llmClient == null) {
+            throw new IOException("LLM client not configured");
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (LlmClient.Message m : messages) {
+            sb.append(m.role().toUpperCase(Locale.ROOT)).append(": ");
+            if (m.content() != null) {
+                sb.append(m.content());
+            }
+            if (m.toolCalls() != null) {
+                for (LlmClient.ToolCall tc : m.toolCalls()) {
+                    sb.append("\n  TOOL_CALL ").append(tc.function().name())
+                            .append(": ").append(tc.function().arguments());
+                }
+            }
+            sb.append("\n\n");
+            if (sb.length() > MAX_SUMMARY_INPUT_CHARS) {
+                sb.append("...(超长内容已截断)\n");
+                break;
+            }
+        }
+
+        String prompt = String.format(LongTerm_PROMPT, sb.toString());
+        List<LlmClient.Message> req = List.of(
+                LlmClient.Message.system("你是一个长期记忆提取助手，只返回 JSON 数组。"),
+                LlmClient.Message.user(prompt)
+        );
+        LlmClient.ChatResponse response = llmClient.chat(req, null);
+        String content = response == null ? null : response.content();
+
+        if (content == null || content.isBlank()) {
+            return List.of();
+        }
+
+        String cleaned = content
+                .replaceAll("```json\\s*", "")
+                .replaceAll("```\\s*", "")
+                .trim();
+
+        JsonNode root = mapper.readTree(cleaned);
+        if (!root.isArray()) {
+            return List.of();
+        }
+
+        List<MemoryEntry> result = new ArrayList<>();
+
+        for (JsonNode node : root) {
+            String memoryContent = node.path("content").asText("").trim();
+            String scope = node.path("scope").asText("project").trim();
+
+            if (!memoryContent.isBlank()) {
+                result.add(new MemoryEntry(memoryContent, scope));
+            }
+        }
+
+        return result;
+
+    }
+
 }

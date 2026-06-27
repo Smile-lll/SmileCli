@@ -30,6 +30,7 @@ public class LongTermMemory {
         loadFromDisk(); //运行之后的 长期记忆实际维护在List<MemoryEntry> memories中
     }
 
+    //手动 /save存储 或者 在上下文压缩时 由LLM提取应该长期存储的内容 存储到磁盘
     public void store(String content) {
         store(content, "project");
     }
@@ -118,6 +119,10 @@ public class LongTermMemory {
         if (!memory.scope().equals(scope)) {
             return false;
         }
+
+        if ("global".equals(scope)) {
+            return true;
+        }   //全局长期记忆 不比较项目路径了。
 
         return memory.projectPath().equals(projectPath);
     }

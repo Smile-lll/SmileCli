@@ -97,7 +97,7 @@ public class Main {
                 }
 
                 if (input.toLowerCase().startsWith("/save")) {
-                    String toSave = input.substring("/plan".length()).trim();
+                    String toSave = input.substring("/save".length()).trim();
                     if (toSave.isEmpty()) {
                         cliPrint(terminal, "请提供要保存的内容，例如：/save 这个项目使用 Java 17");
                         continue;
