@@ -47,4 +47,11 @@ public class TokenBudget {
         long otherChars = text.length() - chineseChars;
         return (int) Math.ceil(chineseChars / 1.5 + otherChars / 4.0);
     }
+
+    /**
+     * 获取可用的 token 数
+     */
+    public static int getAvailableTokens(List<LlmClient.Message> messages) {
+        return (int) (LlmClient.MAX_TOKEN - estimateMessagesTokens(messages));
+    }
 }

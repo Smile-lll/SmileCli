@@ -4,6 +4,7 @@ import edu.sdu.smilecli.agent.Agent;
 import edu.sdu.smilecli.agent.PlanExecuteAgent;
 import edu.sdu.smilecli.llmclient.DeepSeekClient;
 import edu.sdu.smilecli.llmclient.LlmClient;
+import edu.sdu.smilecli.memory.TokenBudget;
 import edu.sdu.smilecli.tool.ToolRegistry;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
@@ -78,6 +79,37 @@ public class Main {
                     continue;
                 }
 
+                if("/memory".equalsIgnoreCase(input)){
+                    int availableTokens=TokenBudget.getAvailableTokens(agent.getConversationHistory());
+                    cliPrint(terminal, "总可用TOKEN数:1000000\n"+"当前可用TOKEN数:"+availableTokens);
+                    continue;
+                }
+
+                if(input.toLowerCase().startsWith("/save")){
+                    String toSave = input.substring("/plan".length()).trim();
+                    if(toSave.isEmpty()){
+                        cliPrint(terminal, "请提供要保存的内容，例如：/save 这个项目使用 Java 17");
+                        continue;
+                    }
+
+                    String scope = "project";
+
+                    if (toSave.startsWith("--global")) {
+                        scope = "global";
+                        toSave = toSave.substring("--global".length()).trim();
+                    }
+
+                    if (toSave.isEmpty()) {
+                        cliPrint(terminal, "请提供要保存的内容，例如：/save --global 默认用中文回答");
+                        continue;
+                    }
+
+                    agent.saveLongTermMemory(toSave, scope);
+
+                    cliPrint(terminal, "已保存到长期记忆(" + scope + "): " + toSave);
+                    continue;
+                }
+
                 if (input.toLowerCase().startsWith("/plan")) {
                     String goal = input.substring("/plan".length()).trim();
                     if (goal.isEmpty()) {
@@ -123,6 +155,9 @@ public class Main {
             "/exit 退出SmileCli",
             "/clear 清空对话Message",
             "/plan Plan & DAG",
+            "/memory 查看当前上下文TOKEN使用情况",
+            "/save <内容> 保存项目级长期记忆",
+            "/save --global <内容> 保存全局长期记忆"
     };
 
     private static String loadEnvValue(String key) {

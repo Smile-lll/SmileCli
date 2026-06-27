@@ -2,6 +2,7 @@ package edu.sdu.smilecli.agent;
 
 import edu.sdu.smilecli.llmclient.LlmClient;
 import edu.sdu.smilecli.memory.ConversationHistoryCompactor;
+import edu.sdu.smilecli.memory.LongTermMemory;
 import edu.sdu.smilecli.tool.ToolRegistry;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,6 +19,7 @@ public class Agent {
     LlmClient.UserToken usertoken;
     private final Consumer<String> output;
     private final ConversationHistoryCompactor historyCompactor;
+    private final LongTermMemory longTermMemory;
 
     public Agent(LlmClient llmClient, ToolRegistry toolRegistry, Consumer<String> output) {
         this.llmClient = llmClient;
@@ -25,6 +27,7 @@ public class Agent {
         this.conversationHistory = new ArrayList<>();
         this.output = output;
         this.historyCompactor = new ConversationHistoryCompactor(llmClient);// 压缩也是用LLM压缩 所以需要传入一个LLMlient
+        this.longTermMemory = new LongTermMemory();
 
         // 添加系统提示
         conversationHistory.add(LlmClient.Message.system(SYSTEM_PROMPT));
@@ -63,7 +66,7 @@ public class Agent {
         while (iteration < MAX_ITERATIONS) {
             iteration++;
 
-            // 短期记忆管理
+            // 短期记忆管理 如果需要token预估达到800_000就压缩，没有不压缩
             historyCompactor.compactIfNeeded(conversationHistory);
 
             // 调用 LLM
@@ -141,6 +144,14 @@ public class Agent {
                                 "执行结果：\n" + result
                 )
         );
+    }
+
+    public List<LlmClient.Message> getConversationHistory() {
+        return conversationHistory;
+    }
+
+    public void saveLongTermMemory(String content, String scope) {
+        longTermMemory.store(content, scope);
     }
 }
 
